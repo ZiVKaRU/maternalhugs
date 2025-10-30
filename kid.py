@@ -21,7 +21,12 @@ from parent_screen import ParentScreen
 
 KV = '''
 MDScreen:
-    name: "main"
+
+    # === ФОН ВСЕГО ЭКРАНА ===
+    Image:
+        source: 'Ресурс 18.png'  # или 'background.png' — положи в папку проекта
+        allow_stretch: True
+        keep_ratio: False
 
     MDFloatLayout:
 
@@ -182,6 +187,7 @@ class KidApp(MDApp):
 
     def create_main_screen(self):
         screen = Builder.load_string(KV)
+        screen.name = "main"  # ✅ Добавь эту строку
         top_bar = screen.ids.top_bar
         icons = ["map", "book-open-variant", "star", "cog"]
         for icon in icons:
