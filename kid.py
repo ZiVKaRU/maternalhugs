@@ -22,9 +22,8 @@ from parent_screen import ParentScreen
 KV = '''
 MDScreen:
 
-    # === ФОН ВСЕГО ЭКРАНА ===
     Image:
-        source: 'Ресурс 18.png'  # или 'background.png' — положи в папку проекта
+        source: 'background.jpg'
         allow_stretch: True
         keep_ratio: False
 
@@ -34,7 +33,7 @@ MDScreen:
             id: top_card
             size_hint_x: 0.9
             size_hint_y: None
-            height: dp(60)
+            height: dp(70)
             pos_hint: {'center_x': 0.5, 'top': 0.98}
             radius: [20,]
             md_bg_color: app.theme_cls.accent_color
@@ -47,7 +46,7 @@ MDScreen:
                     adaptive_size: True
                     size_hint_x: None
                     pos_hint: {'center_x': 0.5, 'center_y': 0.5}
-                    spacing: dp(10)
+                    spacing: dp(20)
 
         FloatLayout:
             size_hint: None, None
@@ -58,7 +57,7 @@ MDScreen:
                 id: switch_bar
                 size_hint: 1, 1
                 spacing: dp(10)
-                pos_hint: {'center_x': 0.59, 'center_y': 0.4}
+                pos_hint: {'center_x': 0.59, 'center_y': 0.1}
 
                 MDRaisedButton:
                     id: month_btn
@@ -70,16 +69,15 @@ MDScreen:
                     text: "Неделя"
                     on_release: app.switch_view('week')
 
-        # === СТРЕЛОЧКИ ДЛЯ СМЕНЫ МЕСЯЦА ===
         MDIconButton:
             id: prev_month_btn
-            icon: 'arrow-left'  # можно заменить на фото
+            icon: 'arrow-left'
             pos_hint: {'center_x': 0.25, 'center_y': 0.7}
             on_release: app.change_month(-1)
 
         MDIconButton:
             id: next_month_btn
-            icon: 'arrow-right'  # можно заменить на фото
+            icon: 'arrow-right'
             pos_hint: {'center_x': 0.75, 'center_y': 0.7}
             on_release: app.change_month(1)
 
@@ -122,6 +120,21 @@ MDScreen:
 '''
 
 
+class ImageButton(ButtonBehavior, Image):
+    def __init__(self, source, callback=None, **kwargs):
+        super().__init__(**kwargs)
+        self.source = source
+        self.callback = callback
+        self.allow_stretch = True
+        self.keep_ratio = False
+        self.size_hint = (None, None)
+        self.size = (dp(40), dp(40))
+
+    def on_release(self):
+        if self.callback:
+            self.callback()
+
+
 class CalendarDayButton(ButtonBehavior, MDLabel):
     def __init__(self, day_num, is_today=False, is_lesson=False, **kwargs):
         super().__init__(**kwargs)
@@ -157,7 +170,7 @@ class KidApp(MDApp):
         self.theme_cls.primary_palette = "Blue"
         self.theme_cls.accent_palette = "LightBlue"
         self.today = date.today()
-        self.current_date = self.today  # Текущий месяц для отображения
+        self.current_date = self.today
         self.current_view = 'month'
         self.lessons = [
             self.today + timedelta(days=5),
@@ -172,14 +185,12 @@ class KidApp(MDApp):
         self.main_screen = self.create_main_screen()
         sm.add_widget(self.main_screen)
 
-        # 🔐 Проверка сессии при запуске
         users = load_users()
         for email, data in users.items():
             if "session_token" in data:
-                # 🔐 Открываем экран в зависимости от типа аккаунта
                 user_type = data.get("type", "main")
                 self.set_user(email)
-                sm.current = user_type  # "main" или "parent"
+                sm.current = user_type
                 return sm
 
         sm.current = "login"
@@ -187,14 +198,15 @@ class KidApp(MDApp):
 
     def create_main_screen(self):
         screen = Builder.load_string(KV)
-        screen.name = "main"  # ✅ Добавь эту строку
+        screen.name = "main"
         top_bar = screen.ids.top_bar
-        icons = ["map", "book-open-variant", "star", "cog"]
-        for icon in icons:
-            if icon == "cog":
-                btn = MDIconButton(icon=icon, on_release=lambda x: self.open_settings())
-            else:
-                btn = MDIconButton(icon=icon, on_release=lambda x, i=icon: None)
+
+        # Заменяем иконки на фото
+        icons = ["map.png", "book-open-variant.png", "star.png", "cog.png"]
+        callbacks = [lambda: print("Карта"), lambda: print("Занятия"), lambda: print("Избранное"), lambda: self.open_settings()]
+
+        for icon, callback in zip(icons, callbacks):
+            btn = ImageButton(source=icon, callback=callback)
             top_bar.add_widget(btn)
 
         self.update_switch_buttons(screen)
@@ -205,15 +217,12 @@ class KidApp(MDApp):
         self.current_user = email
 
     def get_current_month_year(self):
-        # Возвращает строку "Месяц Год" (например, "Октябрь 2025")
         return self.current_date.strftime("%B %Y").capitalize()
 
     def change_month(self, direction):
-        # direction: -1 (назад), +1 (вперёд)
         import calendar
         current = self.current_date
         if direction == -1:
-            # Перейти на один месяц назад
             if current.month == 1:
                 new_year = current.year - 1
                 new_month = 12
@@ -221,7 +230,6 @@ class KidApp(MDApp):
                 new_year = current.year
                 new_month = current.month - 1
         elif direction == 1:
-            # Перейти на один месяц вперёд
             if current.month == 12:
                 new_year = current.year + 1
                 new_month = 1
@@ -229,14 +237,11 @@ class KidApp(MDApp):
                 new_year = current.year
                 new_month = current.month + 1
 
-        # Получаем количество дней в новом месяце
         max_day = calendar.monthrange(new_year, new_month)[1]
-        # Используем min, чтобы не выйти за пределы
         new_day = min(current.day, max_day)
 
         self.current_date = current.replace(year=new_year, month=new_month, day=new_day)
 
-        # Обновить календарь и месяц на экране
         self.create_calendar(self.main_screen.ids.calendar_grid)
         self.main_screen.ids.month_label.text = self.get_current_month_year()
 

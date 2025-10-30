@@ -92,7 +92,6 @@ class LoginScreen(MDScreen):
             self.show_error("Неверный пароль")
             return
 
-        # 🔐 Генерируем и сохраняем токен сессии
         users[email]["session_token"] = generate_session_token()
         save_users(users)
 
@@ -100,8 +99,7 @@ class LoginScreen(MDScreen):
         app = MDApp.get_running_app()
         app.set_user(email)
 
-        # 🔐 Открываем экран в зависимости от типа аккаунта
-        user_type = users[email].get("type", "main")  # по умолчанию "main"
+        user_type = users[email].get("type", "main")
         app.root.current = user_type
 
     def show_error(self, text):
@@ -119,11 +117,9 @@ class RegisterScreen(MDScreen):
         self.password = MDTextField(hint_text="Пароль", password=True, mode="rectangle")
         self.password2 = MDTextField(hint_text="Повторите пароль", password=True, mode="rectangle")
 
-        # Выбор типа аккаунта
         type_layout = MDBoxLayout(orientation="horizontal", size_hint_y=None, height=dp(50), spacing=dp(10))
         type_label = MDLabel(text="Тип аккаунта:", halign="center", size_hint_x=0.5)
 
-        # Кнопка с выпадающим списком
         self.type_button = MDRaisedButton(
             text="Выбрать",
             size_hint_x=0.5,
@@ -154,7 +150,6 @@ class RegisterScreen(MDScreen):
         btn_to_login.bind(on_release=lambda x: setattr(MDApp.get_running_app().root, 'current', 'login'))
         layout.add_widget(btn_to_login)
 
-        # Настройка выпадающего списка
         menu_items = [
             {"text": "Ребенок", "on_release": lambda: self.set_type("main")},
             {"text": "Родитель", "on_release": lambda: self.set_type("parent")},
@@ -180,7 +175,6 @@ class RegisterScreen(MDScreen):
         password = self.password.text
         password2 = self.password2.text
 
-        # Проверка: выбран ли тип аккаунта
         if not hasattr(self, 'user_type') or not self.user_type:
             self.show_error("Выберите тип аккаунта")
             return
@@ -209,7 +203,7 @@ class RegisterScreen(MDScreen):
 
         users[email] = {
             "password": hash_password(password),
-            "type": self.user_type  # сохраняем тип аккаунта
+            "type": self.user_type
         }
         save_users(users)
 
