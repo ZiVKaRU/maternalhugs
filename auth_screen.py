@@ -100,6 +100,10 @@ class LoginScreen(MDScreen):
         app.set_user(email)
 
         user_type = users[email].get("type", "main")
+        # Найдём экран и установим у него current_user, если это родитель
+        if user_type == "parent":
+            parent_screen = app.root.get_screen("parent")
+            parent_screen.current_user = email
         app.root.current = user_type
 
     def show_error(self, text):
@@ -180,6 +184,21 @@ class RegisterScreen(MDScreen):
             return
 
         users = load_users()
+
+        # --- Начало проверки ---
+        if self.user_type == "main":  # Если регистрируется ребёнок
+            # Проверяем, есть ли уже родитель
+            has_parent = any(data.get("type") == "parent" for data in users.values())
+            if not has_parent:
+                self.show_error("Сначала необходимо зарегистрировать аккаунт родителя")
+                return
+        elif self.user_type == "parent":  # Если регистрируется родитель
+            # Проверяем, есть ли уже родитель
+            has_existing_parent = any(data.get("type") == "parent" for data in users.values())
+            if has_existing_parent:
+                self.show_error("Аккаунт родителя уже зарегистрирован. Нельзя создать второй.")
+                return
+        # --- Конец проверки ---
 
         if not email or not password or not password2:
             self.show_error("Заполните все поля")
